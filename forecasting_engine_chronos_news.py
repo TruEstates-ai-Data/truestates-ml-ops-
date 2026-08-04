@@ -920,7 +920,12 @@ def run_market_forecasting_pipeline(chronos_df: pd.DataFrame, area_to_id: dict) 
     totest["narrative"] = totest["area"].map(narrative_dict)
 
     totest.rename(columns={"month": "date"}, inplace=True)
-    final_output = totest[["area", "date", "predictions", "macro_news_factor", "adjusted_pred", "narrative"]].copy()
+    out_cols = ["area", "date", "predictions", "macro_news_factor", "adjusted_pred", "narrative", "area_id"]
+    if "predicted_mom_growth_pct" in totest.columns:
+        out_cols.append("predicted_mom_growth_pct")
+    if "model_area_id" in totest.columns:
+        out_cols.append("model_area_id")
+    final_output = totest[out_cols].copy()
 
     logger.info("Pipeline execution complete.")
     return final_output
@@ -963,7 +968,12 @@ def execute_pipeline_entry(config=None):
     test_df["predictions"] = pd.to_numeric(test_df["predicted_monthly_price"], errors="coerce")
     test_df["area_name"] = test_df["area_name"].astype(str)
 
-    test_df = test_df[["area_id", "month", "predictions", "area_name"]].dropna().drop_duplicates()
+    keep_cols = ["area_id", "month", "predictions", "area_name"]
+    if "predicted_mom_growth_pct" in test_df.columns:
+        keep_cols.append("predicted_mom_growth_pct")
+    if "model_area_id" in test_df.columns:
+        keep_cols.append("model_area_id")
+    test_df = test_df[keep_cols].dropna(subset=["area_id", "month", "predictions", "area_name"]).drop_duplicates()
 
     area_to_id_mapping = (
         test_df[["area_name", "area_id"]]
